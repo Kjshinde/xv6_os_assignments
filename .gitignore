@@ -1,0 +1,6 @@
+.DS_Store
+/Assignment_4/cse536-release/install/riscv-*
+/Assignment_4/cse536-release/install/qemu*
+/Advanced-Operating-Systems-master/
+/cse536-xv6-os-enhancement-main/
+.vscode

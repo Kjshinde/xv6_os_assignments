@@ -2179,7 +2179,7 @@ main()
     80000fea:	d44080e7          	jalr	-700(ra) # 80001d2a <userinit>
     trap_and_emulate_init();
     80000fee:	00006097          	auipc	ra,0x6
-    80000ff2:	8dc080e7          	jalr	-1828(ra) # 800068ca <trap_and_emulate_init>
+    80000ff2:	978080e7          	jalr	-1672(ra) # 80006966 <trap_and_emulate_init>
     __sync_synchronize();
     80000ff6:	0ff0000f          	fence
     started = 1;
@@ -5660,7 +5660,7 @@ clockintr()
     80002936:	16f4a423          	sw	a5,360(s1)
         trap_and_emulate();
     8000293a:	00004097          	auipc	ra,0x4
-    8000293e:	f64080e7          	jalr	-156(ra) # 8000689e <trap_and_emulate>
+    8000293e:	fcc080e7          	jalr	-52(ra) # 80006906 <trap_and_emulate>
     80002942:	a05d                	j	800029e8 <usertrap+0x134>
         if(killed(p))
     80002944:	8526                	mv	a0,s1
@@ -5752,7 +5752,7 @@ clockintr()
     80002a18:	8082                	ret
       trap_and_emulate();
     80002a1a:	00004097          	auipc	ra,0x4
-    80002a1e:	e84080e7          	jalr	-380(ra) # 8000689e <trap_and_emulate>
+    80002a1e:	eec080e7          	jalr	-276(ra) # 80006906 <trap_and_emulate>
     80002a22:	b7d9                	j	800029e8 <usertrap+0x134>
       yield();
     80002a24:	fffff097          	auipc	ra,0xfffff
@@ -10639,7 +10639,7 @@ exec(char *path, char **argv)
     80004fd6:	c11d                	beqz	a0,80004ffc <exec+0x3ba>
     trap_and_emulate_init();  // Initialize the VM's registers and mode
     80004fd8:	00002097          	auipc	ra,0x2
-    80004fdc:	8f2080e7          	jalr	-1806(ra) # 800068ca <trap_and_emulate_init>
+    80004fdc:	98e080e7          	jalr	-1650(ra) # 80006966 <trap_and_emulate_init>
     printf("Created a VM process and allocated memory region (%p - %p).\n", memaddr, memaddr + 1024*PGSIZE);
     80004fe0:	20100613          	li	a2,513
     80004fe4:	065a                	slli	a2,a2,0x16
@@ -13427,19 +13427,18 @@ void dump_hex(const void* data, size_t size) {
     80006650:	b735                	j	8000657c <dump_hex+0x64>
 
 0000000080006652 <init_all_vm_registers>:
+vm_virtual_state vm_state; // Create a global VM state
 
-// Create a global VM state
-vm_virtual_state vm_state;
+// -------------------- Function Definitions --------------------
 
-// -------------------- Define Functions --------------------
+// Function to initialize all the VM's registers to 0
 void init_all_vm_registers(void) {
     80006652:	1141                	addi	sp,sp,-16
     80006654:	e422                	sd	s0,8(sp)
     80006656:	0800                	addi	s0,sp,16
-    /* Initialize all the VM's registers to 0 */
 
     // user trap setup registers
-    vm_state.user_status.code = 0x0000;
+    vm_state.user_status.csr = 0x0000;
     80006658:	0001c797          	auipc	a5,0x1c
     8000665c:	9e878793          	addi	a5,a5,-1560 # 80022040 <vm_state>
     80006660:	0007a023          	sw	zero,0(a5)
@@ -13448,7 +13447,7 @@ void init_all_vm_registers(void) {
     vm_state.user_status.val = 0x00000000;
     80006668:	0007b423          	sd	zero,8(a5)
 
-    vm_state.user_interrupt_enable.code = 0x0004;
+    vm_state.user_interrupt_enable.csr = 0x0004;
     8000666c:	4711                	li	a4,4
     8000666e:	cb98                	sw	a4,16(a5)
     vm_state.user_interrupt_enable.mode = VM_MODE_RESTRICTED;
@@ -13456,7 +13455,7 @@ void init_all_vm_registers(void) {
     vm_state.user_interrupt_enable.val = 0x00000000;
     80006674:	0007bc23          	sd	zero,24(a5)
 
-    vm_state.user_trap_vector.code = 0x0005;
+    vm_state.user_trap_vector.csr = 0x0005;
     80006678:	4715                	li	a4,5
     8000667a:	d398                	sw	a4,32(a5)
     vm_state.user_trap_vector.mode = VM_MODE_RESTRICTED;
@@ -13465,7 +13464,7 @@ void init_all_vm_registers(void) {
     80006680:	0207b423          	sd	zero,40(a5)
 
     // user trap handling registers
-    vm_state.user_scratch.code = 0x0040;
+    vm_state.user_scratch.csr = 0x0040;
     80006684:	04000713          	li	a4,64
     80006688:	db98                	sw	a4,48(a5)
     vm_state.user_scratch.mode = VM_MODE_RESTRICTED;
@@ -13473,7 +13472,7 @@ void init_all_vm_registers(void) {
     vm_state.user_scratch.val = 0x00000000;
     8000668e:	0207bc23          	sd	zero,56(a5)
 
-    vm_state.user_exception_pc.code = 0x0041;
+    vm_state.user_exception_pc.csr = 0x0041;
     80006692:	04100713          	li	a4,65
     80006696:	c3b8                	sw	a4,64(a5)
     vm_state.user_exception_pc.mode = VM_MODE_RESTRICTED;
@@ -13481,7 +13480,7 @@ void init_all_vm_registers(void) {
     vm_state.user_exception_pc.val = 0x00000000;
     8000669c:	0407b423          	sd	zero,72(a5)
 
-    vm_state.user_trap_cause.code = 0x0042;
+    vm_state.user_trap_cause.csr = 0x0042;
     800066a0:	04200713          	li	a4,66
     800066a4:	cbb8                	sw	a4,80(a5)
     vm_state.user_trap_cause.mode = VM_MODE_RESTRICTED;
@@ -13489,7 +13488,7 @@ void init_all_vm_registers(void) {
     vm_state.user_trap_cause.val = 0x00000000;
     800066aa:	0407bc23          	sd	zero,88(a5)
 
-    vm_state.user_trap_value.code = 0x0043;
+    vm_state.user_trap_value.csr = 0x0043;
     800066ae:	04300713          	li	a4,67
     800066b2:	d3b8                	sw	a4,96(a5)
     vm_state.user_trap_value.mode = VM_MODE_RESTRICTED;
@@ -13497,7 +13496,7 @@ void init_all_vm_registers(void) {
     vm_state.user_trap_value.val = 0x00000000;
     800066b8:	0607b423          	sd	zero,104(a5)
 
-    vm_state.user_interrupt_pending.code = 0x0044;
+    vm_state.user_interrupt_pending.csr = 0x0044;
     800066bc:	04400713          	li	a4,68
     800066c0:	dbb8                	sw	a4,112(a5)
     vm_state.user_interrupt_pending.mode = VM_MODE_RESTRICTED;
@@ -13506,7 +13505,7 @@ void init_all_vm_registers(void) {
     800066c6:	0607bc23          	sd	zero,120(a5)
 
     // supervisor trap setup registers
-    vm_state.supervisor_status.code = 0x0100;
+    vm_state.supervisor_status.csr = 0x0100;
     800066ca:	10000713          	li	a4,256
     800066ce:	08e7a023          	sw	a4,128(a5)
     vm_state.supervisor_status.mode = VM_MODE_UNRESTRICTED;
@@ -13515,7 +13514,7 @@ void init_all_vm_registers(void) {
     vm_state.supervisor_status.val = 0x00000000;
     800066d8:	0807b423          	sd	zero,136(a5)
 
-    vm_state.supervisor_exception_delegation.code = 0x0102;
+    vm_state.supervisor_exception_delegation.csr = 0x0102;
     800066dc:	10200693          	li	a3,258
     800066e0:	08d7a823          	sw	a3,144(a5)
     vm_state.supervisor_exception_delegation.mode = VM_MODE_UNRESTRICTED;
@@ -13523,7 +13522,7 @@ void init_all_vm_registers(void) {
     vm_state.supervisor_exception_delegation.val = 0x00000000;   
     800066e8:	0807bc23          	sd	zero,152(a5)
 
-    vm_state.supervisor_interrupt_delegation.code = 0x0103;
+    vm_state.supervisor_interrupt_delegation.csr = 0x0103;
     800066ec:	10300693          	li	a3,259
     800066f0:	0ad7a023          	sw	a3,160(a5)
     vm_state.supervisor_interrupt_delegation.mode = VM_MODE_UNRESTRICTED;
@@ -13531,7 +13530,7 @@ void init_all_vm_registers(void) {
     vm_state.supervisor_interrupt_delegation.val = 0x00000000   ;
     800066f8:	0a07b423          	sd	zero,168(a5)
 
-    vm_state.supervisor_interrupt_enable.code = 0x0104;
+    vm_state.supervisor_interrupt_enable.csr = 0x0104;
     800066fc:	10400693          	li	a3,260
     80006700:	0ad7a823          	sw	a3,176(a5)
     vm_state.supervisor_interrupt_enable.mode = VM_MODE_UNRESTRICTED;
@@ -13539,7 +13538,7 @@ void init_all_vm_registers(void) {
     vm_state.supervisor_interrupt_enable.val = 0x00000000   ;
     80006708:	0a07bc23          	sd	zero,184(a5)
 
-    vm_state.supervisor_trap_vector.code = 0x0105;
+    vm_state.supervisor_trap_vector.csr = 0x0105;
     8000670c:	10500693          	li	a3,261
     80006710:	0cd7a023          	sw	a3,192(a5)
     vm_state.supervisor_trap_vector.mode = VM_MODE_UNRESTRICTED;
@@ -13547,7 +13546,7 @@ void init_all_vm_registers(void) {
     vm_state.supervisor_trap_vector.val = 0x00000000;
     80006718:	0c07b423          	sd	zero,200(a5)
 
-    vm_state.supervisor_counter_enable.code = 0x0106;
+    vm_state.supervisor_counter_enable.csr = 0x0106;
     8000671c:	10600693          	li	a3,262
     80006720:	0cd7a823          	sw	a3,208(a5)
     vm_state.supervisor_counter_enable.mode = VM_MODE_UNRESTRICTED;
@@ -13556,7 +13555,7 @@ void init_all_vm_registers(void) {
     80006728:	0c07bc23          	sd	zero,216(a5)
 
     // supervisor trap handling registers
-    vm_state.supervisor_scratch.code = 0x0140;
+    vm_state.supervisor_scratch.csr = 0x0140;
     8000672c:	14000693          	li	a3,320
     80006730:	0ed7a023          	sw	a3,224(a5)
     vm_state.supervisor_scratch.mode = VM_MODE_UNRESTRICTED;
@@ -13564,7 +13563,7 @@ void init_all_vm_registers(void) {
     vm_state.supervisor_scratch.val = 0x00000000;
     80006738:	0e07b423          	sd	zero,232(a5)
 
-    vm_state.supervisor_exception_pc.code = 0x0141;
+    vm_state.supervisor_exception_pc.csr = 0x0141;
     8000673c:	14100693          	li	a3,321
     80006740:	0ed7a823          	sw	a3,240(a5)
     vm_state.supervisor_exception_pc.mode = VM_MODE_UNRESTRICTED;
@@ -13572,7 +13571,7 @@ void init_all_vm_registers(void) {
     vm_state.supervisor_exception_pc.val = 0x00000000;
     80006748:	0e07bc23          	sd	zero,248(a5)
 
-    vm_state.supervisor_trap_cause.code = 0x0142;
+    vm_state.supervisor_trap_cause.csr = 0x0142;
     8000674c:	14200693          	li	a3,322
     80006750:	10d7a023          	sw	a3,256(a5)
     vm_state.supervisor_trap_cause.mode = VM_MODE_UNRESTRICTED;
@@ -13580,7 +13579,7 @@ void init_all_vm_registers(void) {
     vm_state.supervisor_trap_cause.val = 0x00000000;
     80006758:	1007b423          	sd	zero,264(a5)
 
-    vm_state.supervisor_trap_value.code = 0x0143;
+    vm_state.supervisor_trap_value.csr = 0x0143;
     8000675c:	14300693          	li	a3,323
     80006760:	10d7a823          	sw	a3,272(a5)
     vm_state.supervisor_trap_value.mode = VM_MODE_UNRESTRICTED;
@@ -13588,7 +13587,7 @@ void init_all_vm_registers(void) {
     vm_state.supervisor_trap_value.val = 0x00000000;
     80006768:	1007bc23          	sd	zero,280(a5)
 
-    vm_state.supervisor_interrupt_pending.code = 0x0144;
+    vm_state.supervisor_interrupt_pending.csr = 0x0144;
     8000676c:	14400693          	li	a3,324
     80006770:	12d7a023          	sw	a3,288(a5)
     vm_state.supervisor_interrupt_pending.mode = VM_MODE_UNRESTRICTED;
@@ -13597,7 +13596,7 @@ void init_all_vm_registers(void) {
     80006778:	1207b423          	sd	zero,296(a5)
 
     // supervisor page table register
-    vm_state.supervisor_address_translation.code = 0x0180;
+    vm_state.supervisor_address_translation.csr = 0x0180;
     8000677c:	18000693          	li	a3,384
     80006780:	12d7a823          	sw	a3,304(a5)
     vm_state.supervisor_address_translation.mode = VM_MODE_UNRESTRICTED;
@@ -13606,7 +13605,7 @@ void init_all_vm_registers(void) {
     80006788:	1207bc23          	sd	zero,312(a5)
 
     // machine information registers
-    vm_state.machine_vendor_id.code = 0x0f11;
+    vm_state.machine_vendor_id.csr = 0x0f11;
     8000678c:	6685                	lui	a3,0x1
     8000678e:	f1168713          	addi	a4,a3,-239 # f11 <_entry-0x7ffff0ef>
     80006792:	14e7a023          	sw	a4,320(a5)
@@ -13618,7 +13617,7 @@ void init_all_vm_registers(void) {
     800067a0:	86c63603          	ld	a2,-1940(a2) # 80008008 <etext+0x8>
     800067a4:	14c7b423          	sd	a2,328(a5)
 
-    vm_state.machine_architecture_id.code = 0x0f12;
+    vm_state.machine_architecture_id.csr = 0x0f12;
     800067a8:	f1268613          	addi	a2,a3,-238
     800067ac:	14c7a823          	sw	a2,336(a5)
     vm_state.machine_architecture_id.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13626,7 +13625,7 @@ void init_all_vm_registers(void) {
     vm_state.machine_architecture_id.val = 0x00000000;
     800067b4:	1407bc23          	sd	zero,344(a5)
 
-    vm_state.machine_implementation_id.code = 0x0f13;
+    vm_state.machine_implementation_id.csr = 0x0f13;
     800067b8:	f1368613          	addi	a2,a3,-237
     800067bc:	16c7a023          	sw	a2,352(a5)
     vm_state.machine_implementation_id.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13634,7 +13633,7 @@ void init_all_vm_registers(void) {
     vm_state.machine_implementation_id.val = 0x00000000;
     800067c4:	1607b423          	sd	zero,360(a5)
 
-    vm_state.machine_hardware_thread_id.code = 0x0f14;
+    vm_state.machine_hardware_thread_id.csr = 0x0f14;
     800067c8:	f1468693          	addi	a3,a3,-236
     800067cc:	16d7a823          	sw	a3,368(a5)
     vm_state.machine_hardware_thread_id.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13643,7 +13642,7 @@ void init_all_vm_registers(void) {
     800067d4:	1607bc23          	sd	zero,376(a5)
 
     // machine trap setup registers
-    vm_state.machine_status.code = 0x0300;
+    vm_state.machine_status.csr = 0x0300;
     800067d8:	30000693          	li	a3,768
     800067dc:	18d7a023          	sw	a3,384(a5)
     vm_state.machine_status.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13651,7 +13650,7 @@ void init_all_vm_registers(void) {
     vm_state.machine_status.val = 0x00000000;
     800067e4:	1807b423          	sd	zero,392(a5)
 
-    vm_state.machine_isa.code = 0x0301;
+    vm_state.machine_isa.csr = 0x0301;
     800067e8:	30100693          	li	a3,769
     800067ec:	18d7a823          	sw	a3,400(a5)
     vm_state.machine_isa.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13659,7 +13658,7 @@ void init_all_vm_registers(void) {
     vm_state.machine_isa.val = 0x00000000;
     800067f4:	1807bc23          	sd	zero,408(a5)
 
-    vm_state.machine_exception_delegation.code = 0x0302;
+    vm_state.machine_exception_delegation.csr = 0x0302;
     800067f8:	30200693          	li	a3,770
     800067fc:	1ad7a023          	sw	a3,416(a5)
     vm_state.machine_exception_delegation.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13667,7 +13666,7 @@ void init_all_vm_registers(void) {
     vm_state.machine_exception_delegation.val = 0x00000000;
     80006804:	1a07b423          	sd	zero,424(a5)
 
-    vm_state.machine_interrupt_delegation.code = 0x0303;
+    vm_state.machine_interrupt_delegation.csr = 0x0303;
     80006808:	30300693          	li	a3,771
     8000680c:	1ad7a823          	sw	a3,432(a5)
     vm_state.machine_interrupt_delegation.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13675,7 +13674,7 @@ void init_all_vm_registers(void) {
     vm_state.machine_interrupt_delegation.val = 0x00000000;
     80006814:	1a07bc23          	sd	zero,440(a5)
 
-    vm_state.machine_interrupt_enable.code = 0x0304;
+    vm_state.machine_interrupt_enable.csr = 0x0304;
     80006818:	30400693          	li	a3,772
     8000681c:	1cd7a023          	sw	a3,448(a5)
     vm_state.machine_interrupt_enable.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13683,7 +13682,7 @@ void init_all_vm_registers(void) {
     vm_state.machine_interrupt_enable.val = 0x00000000;
     80006824:	1c07b423          	sd	zero,456(a5)
 
-    vm_state.machine_trap_vector.code = 0x0305;
+    vm_state.machine_trap_vector.csr = 0x0305;
     80006828:	30500693          	li	a3,773
     8000682c:	1cd7a823          	sw	a3,464(a5)
     vm_state.machine_trap_vector.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13691,7 +13690,7 @@ void init_all_vm_registers(void) {
     vm_state.machine_trap_vector.val = 0x00000000;
     80006834:	1c07bc23          	sd	zero,472(a5)
 
-    vm_state.machine_counter_enable.code = 0x0306;
+    vm_state.machine_counter_enable.csr = 0x0306;
     80006838:	30600693          	li	a3,774
     8000683c:	1ed7a023          	sw	a3,480(a5)
     vm_state.machine_counter_enable.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13700,7 +13699,7 @@ void init_all_vm_registers(void) {
     80006844:	1e07b423          	sd	zero,488(a5)
 
     // machine trap handling registers
-    vm_state.machine_scratch.code = 0x0340;
+    vm_state.machine_scratch.csr = 0x0340;
     80006848:	34000693          	li	a3,832
     8000684c:	1ed7a823          	sw	a3,496(a5)
     vm_state.machine_scratch.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13708,7 +13707,7 @@ void init_all_vm_registers(void) {
     vm_state.machine_scratch.val = 0x00000000;
     80006854:	1e07bc23          	sd	zero,504(a5)
 
-    vm_state.machine_exception_pc.code = 0x0341;
+    vm_state.machine_exception_pc.csr = 0x0341;
     80006858:	34100693          	li	a3,833
     8000685c:	20d7a023          	sw	a3,512(a5)
     vm_state.machine_exception_pc.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13716,7 +13715,7 @@ void init_all_vm_registers(void) {
     vm_state.machine_exception_pc.val = 0x00000000;
     80006864:	2007b423          	sd	zero,520(a5)
 
-    vm_state.machine_trap_cause.code = 0x0342;
+    vm_state.machine_trap_cause.csr = 0x0342;
     80006868:	34200693          	li	a3,834
     8000686c:	20d7a823          	sw	a3,528(a5)
     vm_state.machine_trap_cause.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13724,7 +13723,7 @@ void init_all_vm_registers(void) {
     vm_state.machine_trap_cause.val = 0x00000000;
     80006874:	2007bc23          	sd	zero,536(a5)
 
-    vm_state.machine_trap_value.code = 0x0343;
+    vm_state.machine_trap_value.csr = 0x0343;
     80006878:	34300693          	li	a3,835
     8000687c:	22d7a023          	sw	a3,544(a5)
     vm_state.machine_trap_value.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13732,7 +13731,7 @@ void init_all_vm_registers(void) {
     vm_state.machine_trap_value.val = 0x00000000;
     80006884:	2207b423          	sd	zero,552(a5)
 
-    vm_state.machine_interrupt_pending.code = 0x0344;
+    vm_state.machine_interrupt_pending.csr = 0x0344;
     80006888:	34400693          	li	a3,836
     8000688c:	22d7a823          	sw	a3,560(a5)
     vm_state.machine_interrupt_pending.mode = VM_MODE_FULLY_UNRESTRICTED;
@@ -13747,60 +13746,163 @@ void init_all_vm_registers(void) {
     8000689a:	0141                	addi	sp,sp,16
     8000689c:	8082                	ret
 
-000000008000689e <trap_and_emulate>:
-
+000000008000689e <decode_instruction>:
 // In your ECALL, add the following for prints
 // struct proc* p = myproc();
 // printf("(EC at %p)\n", p->trapframe->epc);
 
-void trap_and_emulate(void) {
+// Function to decode a RISC-V instruction into its components
+decoded_inst decode_instruction(uint64 instruction_address, uint32 raw_instruction) {
     8000689e:	1141                	addi	sp,sp,-16
-    800068a0:	e406                	sd	ra,8(sp)
-    800068a2:	e022                	sd	s0,0(sp)
-    800068a4:	0800                	addi	s0,sp,16
-    uint32 funct3   = 0;
-    uint32 rs1      = 0;
-    uint32 uimm     = 0;
-
-    /* Print the statement */
-    printf("(PI at %p) op = %x, rd = %x, funct3 = %x, rs1 = %x, uimm = %x\n", 
-    800068a6:	4801                	li	a6,0
-    800068a8:	4781                	li	a5,0
-    800068aa:	4701                	li	a4,0
-    800068ac:	4681                	li	a3,0
-    800068ae:	4601                	li	a2,0
-    800068b0:	4581                	li	a1,0
-    800068b2:	00002517          	auipc	a0,0x2
-    800068b6:	04e50513          	addi	a0,a0,78 # 80008900 <syscalls+0x4a8>
-    800068ba:	ffffa097          	auipc	ra,0xffffa
-    800068be:	cd0080e7          	jalr	-816(ra) # 8000058a <printf>
-                addr, op, rd, funct3, rs1, uimm);
+    800068a0:	e422                	sd	s0,8(sp)
+    800068a2:	0800                	addi	s0,sp,16
+    // Extract instruction fields based on RISC-V encoding format 
+    decoded.op = raw_instruction & 0b1111111;          // Extract opcode from bits [6:0]
+    decoded.rd = (raw_instruction >> 7) & 0b11111;     // Extract destination register from bits [11:7]
+    decoded.funct3 = (raw_instruction >> 12) & 0b111;  // Extract function3 code from bits [14:12]
+    decoded.rs1 = (raw_instruction >> 15) & 0b11111;   // Extract source register 1 from bits [19:15]
+    decoded.rs2 = (raw_instruction >> 20) & 0b11111;   // Extract source register 2 from bits [24:20]
+    800068a4:	0146569b          	srliw	a3,a2,0x14
+    decoded.uimm = (raw_instruction >> 20);            // Extract upper immediate value from bits [31:20]
+    
+    return decoded;
+    800068a8:	e10c                	sd	a1,0(a0)
+    800068aa:	c510                	sw	a2,8(a0)
+    decoded.op = raw_instruction & 0b1111111;          // Extract opcode from bits [6:0]
+    800068ac:	07f67713          	andi	a4,a2,127
+    return decoded;
+    800068b0:	c558                	sw	a4,12(a0)
+    decoded.rd = (raw_instruction >> 7) & 0b11111;     // Extract destination register from bits [11:7]
+    800068b2:	0076571b          	srliw	a4,a2,0x7
+    800068b6:	8b7d                	andi	a4,a4,31
+    return decoded;
+    800068b8:	c918                	sw	a4,16(a0)
+    decoded.rs1 = (raw_instruction >> 15) & 0b11111;   // Extract source register 1 from bits [19:15]
+    800068ba:	00f6571b          	srliw	a4,a2,0xf
+    800068be:	8b7d                	andi	a4,a4,31
+    return decoded;
+    800068c0:	c958                	sw	a4,20(a0)
+    decoded.rs2 = (raw_instruction >> 20) & 0b11111;   // Extract source register 2 from bits [24:20]
+    800068c2:	01f6f713          	andi	a4,a3,31
+    return decoded;
+    800068c6:	cd18                	sw	a4,24(a0)
+    decoded.funct3 = (raw_instruction >> 12) & 0b111;  // Extract function3 code from bits [14:12]
+    800068c8:	00c6561b          	srliw	a2,a2,0xc
+    800068cc:	8a1d                	andi	a2,a2,7
+    return decoded;
+    800068ce:	cd50                	sw	a2,28(a0)
+    800068d0:	d114                	sw	a3,32(a0)
 }
-    800068c2:	60a2                	ld	ra,8(sp)
-    800068c4:	6402                	ld	s0,0(sp)
-    800068c6:	0141                	addi	sp,sp,16
-    800068c8:	8082                	ret
+    800068d2:	6422                	ld	s0,8(sp)
+    800068d4:	0141                	addi	sp,sp,16
+    800068d6:	8082                	ret
 
-00000000800068ca <trap_and_emulate_init>:
+00000000800068d8 <print_instruction>:
 
+// Function to print decoded instruction information
+void print_instruction(decoded_inst* inst) {
+    800068d8:	1141                	addi	sp,sp,-16
+    800068da:	e406                	sd	ra,8(sp)
+    800068dc:	e022                	sd	s0,0(sp)
+    800068de:	0800                	addi	s0,sp,16
+    printf("(PI at %p) op = %x, rd = %x, funct3 = %x, rs1 = %x, uimm = %x\n", inst->addr, inst->op, inst->rd, inst->funct3, inst->rs1, inst->uimm);
+    800068e0:	02052803          	lw	a6,32(a0)
+    800068e4:	495c                	lw	a5,20(a0)
+    800068e6:	4d58                	lw	a4,28(a0)
+    800068e8:	4914                	lw	a3,16(a0)
+    800068ea:	4550                	lw	a2,12(a0)
+    800068ec:	610c                	ld	a1,0(a0)
+    800068ee:	00002517          	auipc	a0,0x2
+    800068f2:	01250513          	addi	a0,a0,18 # 80008900 <syscalls+0x4a8>
+    800068f6:	ffffa097          	auipc	ra,0xffffa
+    800068fa:	c94080e7          	jalr	-876(ra) # 8000058a <printf>
+}
+    800068fe:	60a2                	ld	ra,8(sp)
+    80006900:	6402                	ld	s0,0(sp)
+    80006902:	0141                	addi	sp,sp,16
+    80006904:	8082                	ret
+
+0000000080006906 <trap_and_emulate>:
+
+// Function to trap and emulate a RISC-V instruction made by the VM
+void trap_and_emulate(void) {
+    80006906:	715d                	addi	sp,sp,-80
+    80006908:	e486                	sd	ra,72(sp)
+    8000690a:	e0a2                	sd	s0,64(sp)
+    8000690c:	fc26                	sd	s1,56(sp)
+    8000690e:	f84a                	sd	s2,48(sp)
+    80006910:	0880                	addi	s0,sp,80
+    // Get the current process structure
+    struct proc *current_process = myproc();
+    80006912:	ffffb097          	auipc	ra,0xffffb
+    80006916:	112080e7          	jalr	274(ra) # 80001a24 <myproc>
+    8000691a:	84aa                	mv	s1,a0
+    
+    // Get the instruction address from the trapped Program Counter (PC)
+    uint64 instruction_address = current_process->trapframe->epc;
+    8000691c:	6d3c                	ld	a5,88(a0)
+    8000691e:	0187b903          	ld	s2,24(a5)
+    
+    uint32 raw_instruction;
+
+    // Read the instruction from user space memory using copyin
+    copyin(current_process->pagetable, (char*)&raw_instruction, instruction_address, sizeof(raw_instruction));
+    80006922:	4691                	li	a3,4
+    80006924:	864a                	mv	a2,s2
+    80006926:	fdc40593          	addi	a1,s0,-36
+    8000692a:	6928                	ld	a0,80(a0)
+    8000692c:	ffffb097          	auipc	ra,0xffffb
+    80006930:	e44080e7          	jalr	-444(ra) # 80001770 <copyin>
+    
+    // Decode the instruction into its components
+    decoded_inst decoded_instruction = decode_instruction(instruction_address, raw_instruction);
+    80006934:	fdc42603          	lw	a2,-36(s0)
+    80006938:	85ca                	mv	a1,s2
+    8000693a:	fb040513          	addi	a0,s0,-80
+    8000693e:	00000097          	auipc	ra,0x0
+    80006942:	f60080e7          	jalr	-160(ra) # 8000689e <decode_instruction>
+    
+    // Print detailed information about the instruction
+    print_instruction(&decoded_instruction);
+    80006946:	fb040513          	addi	a0,s0,-80
+    8000694a:	00000097          	auipc	ra,0x0
+    8000694e:	f8e080e7          	jalr	-114(ra) # 800068d8 <print_instruction>
+    
+    // Advance the Program Counter to the next instruction (RISC-V instructions are 4 bytes)
+    current_process->trapframe->epc += 4;
+    80006952:	6cb8                	ld	a4,88(s1)
+    80006954:	6f1c                	ld	a5,24(a4)
+    80006956:	0791                	addi	a5,a5,4
+    80006958:	ef1c                	sd	a5,24(a4)
+}
+    8000695a:	60a6                	ld	ra,72(sp)
+    8000695c:	6406                	ld	s0,64(sp)
+    8000695e:	74e2                	ld	s1,56(sp)
+    80006960:	7942                	ld	s2,48(sp)
+    80006962:	6161                	addi	sp,sp,80
+    80006964:	8082                	ret
+
+0000000080006966 <trap_and_emulate_init>:
+
+// Function to initialize the VM's registers and mode
 void trap_and_emulate_init(void) {
-    800068ca:	1141                	addi	sp,sp,-16
-    800068cc:	e406                	sd	ra,8(sp)
-    800068ce:	e022                	sd	s0,0(sp)
-    800068d0:	0800                	addi	s0,sp,16
+    80006966:	1141                	addi	sp,sp,-16
+    80006968:	e406                	sd	ra,8(sp)
+    8000696a:	e022                	sd	s0,0(sp)
+    8000696c:	0800                	addi	s0,sp,16
     
     init_all_vm_registers();    // Initialize all the VM's registers to 0 
-    800068d2:	00000097          	auipc	ra,0x0
-    800068d6:	d80080e7          	jalr	-640(ra) # 80006652 <init_all_vm_registers>
+    8000696e:	00000097          	auipc	ra,0x0
+    80006972:	ce4080e7          	jalr	-796(ra) # 80006652 <init_all_vm_registers>
     vm_state.mode = VM_MODE_FULLY_UNRESTRICTED; // Set the mode of the VM to machine mode
-    800068da:	4789                	li	a5,2
-    800068dc:	0001c717          	auipc	a4,0x1c
-    800068e0:	9af72223          	sw	a5,-1628(a4) # 80022280 <vm_state+0x240>
+    80006976:	4789                	li	a5,2
+    80006978:	0001c717          	auipc	a4,0x1c
+    8000697c:	90f72423          	sw	a5,-1784(a4) # 80022280 <vm_state+0x240>
 }
-    800068e4:	60a2                	ld	ra,8(sp)
-    800068e6:	6402                	ld	s0,0(sp)
-    800068e8:	0141                	addi	sp,sp,16
-    800068ea:	8082                	ret
+    80006980:	60a2                	ld	ra,8(sp)
+    80006982:	6402                	ld	s0,0(sp)
+    80006984:	0141                	addi	sp,sp,16
+    80006986:	8082                	ret
 	...
 
 0000000080007000 <_trampoline>:

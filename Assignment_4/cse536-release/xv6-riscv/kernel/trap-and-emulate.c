@@ -322,7 +322,7 @@ void trap_and_emulate_init(void) {
     vm_state.machine_trap_vector.val = 0x0;
     vm_state.supervisor_trap_vector.val = 0x0;
     
-    printf("VM initialized in mode: %d\n", vm_state.mode);
+    
 }
 
 // Function to trap and emulate a RISC-V instruction made by the VM
@@ -448,47 +448,47 @@ void handle_sret(struct proc *p) {
 }
 
 void handle_mret(struct proc *p) {
-    if (vm_state.mode >= VM_MODE_FULLY_UNRESTRICTED) {
-        unsigned long mstatus = vm_state.machine_status.val;
-
-        unsigned long mpp = (mstatus >> 11) & 0x1; // Extract the previous privilege level (MPP)
-        mstatus &= ~MSTATUS_MPP_MASK; // Clear MPP bits
-
-        unsigned long mpie = (mstatus >> 7) & 0x1; // Extract the previous interrupt enable bit (MPIE)
-
-        mstatus |= mpie << 3; // Set MIE bit to MPIE
-        mstatus &= (1 << 0x7); // Set MPIE bit to 1
-        mstatus &= ~(1 << 0x17); // Clear MPRV bit
-
-        // Set the current privilege level (mode) to MPP
-        if (mpp) {
-            vm_state.mode = VM_MODE_UNRESTRICTED;
-        } else {
-            vm_state.mode = VM_MODE_RESTRICTED;
+    if (vm_state.mode == VM_MODE_FULLY_UNRESTRICTED) {  // Only handle MRET in M-mode
+        // Extract and update MPP bits
+        uint64 mpp = (vm_state.machine_status.val >> 11) & 0x3;
+        uint64 mpie = (vm_state.machine_status.val >> 7) & 0x1;
+        
+        // Update machine status register
+        vm_state.machine_status.val &= ~(3UL << 11);  // Clear MPP
+        vm_state.machine_status.val |= (mpie << 3);   // Set MIE to previous MPIE
+        vm_state.machine_status.val |= (1UL << 7);    // Set MPIE to 1
+        
+        // Set new privilege mode based on MPP
+        switch (mpp) {
+            case 0x0:  // Return to User mode
+                vm_state.mode = VM_MODE_RESTRICTED;
+                if (vm_state.vm_ptable) {
+                    p->pagetable = vm_state.vm_ptable;
+                }
+                break;
+                
+            case 0x1:  // Return to Supervisor mode
+                vm_state.mode = VM_MODE_UNRESTRICTED;
+                if (vm_state.vm_ptable) {
+                    p->pagetable = vm_state.vm_ptable;
+                }
+                break;
+                
+            case 0x3:  // Return to Machine mode
+                vm_state.mode = VM_MODE_FULLY_UNRESTRICTED;
+                break;
+                
+            default:
+                setkilled(p);
+                return;
         }
-
-        vm_state.machine_status.val = mstatus; // Write back to the mstatus register
-
-        p->trapframe->epc = vm_state.machine_exception_pc.val; // Set the program counter to the value of MEPC
-
-        // Copy the page table entries
-        vm_state.vm_ptable = proc_pagetable(p);
-        for (uint64 i = 0; i < p->sz; i += PGSIZE) {
-            pte_t *pte = walk(p->pagetable, i, 0);
-            if (pte == 0 || (*pte & PTE_V) == 0) {
-                panic("uvmcopy: page not present");
-            }
-            uint64 pa = PTE2PA(*pte);
-            uint flags = PTE_FLAGS(*pte);
-            mappages(vm_state.vm_ptable, i, PGSIZE, (uint64)pa, flags);
-        }
-
-        // Unmap a specific memory region
-        uvmunmap(vm_state.vm_ptable, 0x0000000080000000, 1, 0);
-        p->pagetable = vm_state.vm_ptable;
+        
+        // Set PC to mepc
+        p->trapframe->epc = vm_state.machine_exception_pc.val;
+        
     } else {
+        // Kill process if trying to execute MRET from wrong privilege level
         setkilled(p);
-        trap_and_emulate_init();
     }
 }
 

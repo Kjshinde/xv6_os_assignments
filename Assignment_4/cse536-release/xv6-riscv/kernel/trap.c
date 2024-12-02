@@ -70,9 +70,9 @@ usertrap(void)
 
    if(r_scause() == CAUSE_SYSCALL_ECALL){
       // Handle system calls
-      if(strncmp(p->name, "vm-", 3) == 0) {
-        p->proc_te_vm = 1;  // Mark as VM process
-        trap_and_emulate();
+      if(check_vm_or_not(p)) {
+        p->proc_te_vm = 1;  // Mark process as VM process
+        trap_and_emulate(); //call trap_and_emulate() to handle the ecall and other instructions
       } 
       else {
         if(killed(p))

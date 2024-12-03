@@ -105,16 +105,15 @@ typedef struct decoded_inst {
 // -------------------- Define Global Variables --------------------
 vm_virtual_state vm_state; // Create a global VM state
 
-// -------------------- Function Prototypes --------------------
+// -------------------- Function Declarations --------------------
 void init_all_vm_registers(void);
 void handle_ecall(struct proc *p);
 void handle_sret(struct proc *p);
 void handle_mret(struct proc *p);
 void handle_csrw(decoded_inst *decoded, struct proc *p);
 void handle_csrr(decoded_inst *decoded, struct proc *p);
-void write_csr(uint32 csr_address, uint32 value);
-uint32 read_csr(uint32 csr_address);
 void sret_handler(struct proc *p);
+decoded_inst decode_instruction(uint64 instruction_address, uint32 raw_instruction);
 
 // -------------------- Function Definitions --------------------
 
@@ -277,56 +276,24 @@ void init_all_vm_registers(void) {
 
 }
 
-// Function to decode a RISC-V instruction into its components
-decoded_inst decode_instruction(uint64 instruction_address, uint32 raw_instruction) {
-    decoded_inst decoded;
-    
-    // Store the original instruction information
-    decoded.addr = instruction_address;
-    decoded.inst = raw_instruction;
-    
-    // Extract instruction fields based on RISC-V encoding format 
-    decoded.op = raw_instruction & 0b1111111;          // Extract opcode from bits [6:0]
-    decoded.rd = (raw_instruction >> 7) & 0b11111;     // Extract destination register from bits [11:7]
-    decoded.funct3 = (raw_instruction >> 12) & 0b111;  // Extract function3 code from bits [14:12]
-    decoded.rs1 = (raw_instruction >> 15) & 0b11111;   // Extract source register 1 from bits [19:15]
-    decoded.rs2 = (raw_instruction >> 20) & 0b11111;   // Extract source register 2 from bits [24:20]
-    decoded.uimm = (raw_instruction >> 20);            // Extract upper immediate value from bits [31:20]
-    
-    return decoded;
-}
-
 // Function to print decoded instruction information
-void print_instruction(decoded_inst* inst) {
+void print_inst_info(decoded_inst* inst) {
     printf("(PI at %p) op = %x, rd = %x, funct3 = %x, rs1 = %x, uimm = %x\n", inst->addr, inst->op, inst->rd, inst->funct3, inst->rs1, inst->uimm);
 }
 
 // Function to initialize the VM's registers and mode
 void trap_and_emulate_init(void) {
+
     init_all_vm_registers();    // Initialize all the VM's registers to 0 
-    
-    // Set initial machine status register value with proper permissions
-    vm_state.machine_status.val = (3UL << 11);  // Set MPP to M-mode (3)
-    vm_state.machine_status.val |= (1UL << 7);  // Set MPIE
-    vm_state.machine_status.val |= (1UL << 3);  // Set MIE
-    
-    // Set initial supervisor status register
-    vm_state.supervisor_status.val = (1UL << 8); // Set SPP
-    vm_state.supervisor_status.val |= (1UL << 5); // Set SPIE
-    vm_state.supervisor_status.val |= (1UL << 1); // Set SIE
     
     // Set the mode of the VM to machine mode
     vm_state.mode = VM_MODE_FULLY_UNRESTRICTED;
-    
-    // Set up trap vectors
-    vm_state.machine_trap_vector.val = 0x0;
-    vm_state.supervisor_trap_vector.val = 0x0;
-    
     
 }
 
 // Function to trap and emulate a RISC-V instruction made by the VM
 void trap_and_emulate(void) {
+
     // Get the current process structure
     struct proc *current_process = myproc();
     
@@ -342,7 +309,7 @@ void trap_and_emulate(void) {
     decoded_inst decoded_instruction = decode_instruction(instruction_address, raw_instruction);
 
 
-    // Use a switch-case to handle different instructions based on funct3 and uimm
+    // handle different instructions based on funct3 and uimm
     switch (decoded_instruction.funct3) {
         case 0x0:
             switch (decoded_instruction.uimm) {
@@ -351,41 +318,51 @@ void trap_and_emulate(void) {
                     handle_ecall(current_process);
                     break;
                 case 0x102: // SRET
-                    // print detailed about the process
-                    // printf("(SRET at %p)\n", current_process->trapframe->epc);
                     handle_sret(current_process);
-                    print_instruction(&decoded_instruction);  // Pass pointer to decoded_instruction
+                    print_inst_info(&decoded_instruction);  
                     break;
                 case 0x302: // MRET
                     handle_mret(current_process);
-                    print_instruction(&decoded_instruction);  // Pass pointer to decoded_instruction
+                    print_inst_info(&decoded_instruction);  
                     break;
                 default:
                     // Handle other cases or errors
-                    printf("(Unknown instruction at %p) op = %x, rd = %x, funct3 = %x, rs1 = %x, uimm = %x\n", 
-                           decoded_instruction.addr, decoded_instruction.op, decoded_instruction.rd, 
-                           decoded_instruction.funct3, decoded_instruction.rs1, decoded_instruction.uimm);
+                    printf("(Unknown instruction at %p) op = %x, rd = %x, funct3 = %x, rs1 = %x, uimm = %x\n", decoded_instruction.addr, decoded_instruction.op, decoded_instruction.rd, decoded_instruction.funct3, decoded_instruction.rs1, decoded_instruction.uimm);
                     break;
             }
             break;
         case 0x1: // CSR Write (CSRW)
             handle_csrw(&decoded_instruction, current_process);
-            print_instruction(&decoded_instruction);  // Pass pointer to decoded_instruction
+            print_inst_info(&decoded_instruction);  // Pass pointer to decoded_instruction
             break;
         case 0x2: // CSR Read (CSRR)
             handle_csrr(&decoded_instruction, current_process);
-            print_instruction(&decoded_instruction);  // Pass pointer to decoded_instruction
+            print_inst_info(&decoded_instruction);  // Pass pointer to decoded_instruction
             break;
         default:
-            // Print detailed information about the instruction
-            printf("(PI at %p) op = %x, rd = %x, funct3 = %x, rs1 = %x, uimm = %x\n", 
-                   decoded_instruction.addr, decoded_instruction.op, decoded_instruction.rd, 
-                   decoded_instruction.funct3, decoded_instruction.rs1, decoded_instruction.uimm);
+            printf("(Unknown instruction at %p) op = %x, rd = %x, funct3 = %x, rs1 = %x, uimm = %x\n", decoded_instruction.addr, decoded_instruction.op, decoded_instruction.rd, decoded_instruction.funct3, decoded_instruction.rs1, decoded_instruction.uimm);
             break;
     }
+}
 
-    // // Advance the Program Counter to the next instruction
-    // current_process->trapframe->epc += 4;
+// Function to decode a RISC-V instruction into its components
+decoded_inst decode_instruction(uint64 instruction_address, uint32 raw_instruction) {
+    
+    decoded_inst decoded;
+    
+    // Store the original instruction information
+    decoded.addr = instruction_address;
+    decoded.inst = raw_instruction;
+    
+    // Extract instruction fields based on RISC-V encoding format 
+    decoded.op = raw_instruction & 0b1111111;          // Extract opcode from bits [6:0]
+    decoded.rd = (raw_instruction >> 7) & 0b11111;     // Extract destination register from bits [11:7]
+    decoded.funct3 = (raw_instruction >> 12) & 0b111;  // Extract function3 code from bits [14:12]
+    decoded.rs1 = (raw_instruction >> 15) & 0b11111;   // Extract source register 1 from bits [19:15]
+    decoded.rs2 = (raw_instruction >> 20) & 0b11111;   // Extract source register 2 from bits [24:20]
+    decoded.uimm = (raw_instruction >> 20);            // Extract upper immediate value from bits [31:20]
+    
+    return decoded;
 }
 
 // Function to handle the ECALL instruction
@@ -420,6 +397,7 @@ void handle_ecall(struct proc *p) {
     }
 }
 
+// Function to handle the SRET instruction
 void handle_sret(struct proc *p) {
 
     if (vm_state.mode >= VM_MODE_UNRESTRICTED) {
@@ -447,6 +425,7 @@ void handle_sret(struct proc *p) {
     }
 }
 
+// Function to handle the MRET instruction
 void handle_mret(struct proc *p) {
     if (vm_state.mode == VM_MODE_FULLY_UNRESTRICTED) {  // Only handle MRET in M-mode
         // Extract and update MPP bits
@@ -492,15 +471,11 @@ void handle_mret(struct proc *p) {
     }
 }
 
-uint64* get_vm_trapframe_register(uint32 reg, struct trapframe *tf) {
-    // reg == 1 corresponds to ra (x1), reg == 2 to sp (x2), etc.
-    if (reg == 0) return 0;  // x0 is hardwired to 0
-    return (uint64*)((char*)&tf->ra + (reg - 1) * sizeof(uint64));
-}
-
+// Function to handle the CSRW instruction
 void handle_csrw(decoded_inst *decoded, struct proc *p) {
-    // Get source register value from trapframe
-    uint64 *src_reg = get_vm_trapframe_register(decoded->rs1, p->trapframe);
+    
+    // Get source register from trapframe
+    uint64 *src_reg = (uint64*)((char*)&p->trapframe->ra + (decoded->rs1 - 1) * sizeof(uint64));
     
     // Get destination CSR register from vm_state
     vm_register *dest_csr = NULL;
@@ -590,6 +565,7 @@ void handle_csrw(decoded_inst *decoded, struct proc *p) {
     }
 }
 
+// Function to handle the CSRR instruction
 void handle_csrr(decoded_inst *decoded, struct proc *p) {
     // Print instruction details
    
@@ -659,17 +635,17 @@ void handle_csrr(decoded_inst *decoded, struct proc *p) {
         }
 
         // Get destination register from trapframe
-        uint64 *dest = get_vm_trapframe_register(decoded->rd, p->trapframe);
-        
-        if (dest_csr != NULL && dest != NULL) {
+        uint64 *dest_reg = (uint64*)((char*)&p->trapframe->ra + (decoded->rd - 1) * sizeof(uint64));
+
+        if (dest_csr != NULL && dest_reg != NULL) {
             // Special case: mvendorid can be read from any privilege mode
             if (decoded->uimm == 0x0f11) {
-                *dest = dest_csr->val;
+                *dest_reg = dest_csr->val;
                 p->trapframe->epc += 4;
             }
             // Normal case: check privilege level
             else if (vm_state.mode >= dest_csr->mode) {
-                *dest = dest_csr->val;
+                *dest_reg = dest_csr->val;
                 p->trapframe->epc += 4;
             }
             // Insufficient privileges
